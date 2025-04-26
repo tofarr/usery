@@ -1,4 +1,5 @@
 from typing import Any, List
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,7 +66,7 @@ async def create_new_user(
 async def read_user(
     *,
     db: AsyncSession = Depends(get_db),
-    user_id: int,
+    user_id: UUID,
 ) -> Any:
     """
     Get a specific user by id.
@@ -83,7 +84,7 @@ async def read_user(
 async def update_user_info(
     *,
     db: AsyncSession = Depends(get_db),
-    user_id: int,
+    user_id: UUID,
     user_in: UserUpdate,
 ) -> Any:
     """
@@ -120,7 +121,7 @@ async def update_user_info(
 async def delete_user_by_id(
     *,
     db: AsyncSession = Depends(get_db),
-    user_id: int,
+    user_id: UUID,
 ) -> Any:
     """
     Delete a user.

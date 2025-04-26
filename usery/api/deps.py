@@ -1,4 +1,5 @@
 from typing import AsyncGenerator, Optional
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -46,7 +47,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    user = await get_user(db, user_id=int(token_data.sub))
+    user = await get_user(db, user_id=UUID(token_data.sub))
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -1,13 +1,15 @@
 from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
+from uuid import UUID
 
 from usery.models.user import User
 from usery.api.schemas.user import UserCreate, UserUpdate
 from usery.services.security import get_password_hash, verify_password
 
 
-async def get_user(db: AsyncSession, user_id: int) -> Optional[User]:
+async def get_user(db: AsyncSession, user_id: UUID) -> Optional[User]:
     """Get a user by ID."""
     result = await db.execute(select(User).filter(User.id == user_id))
     return result.scalars().first()
@@ -46,7 +48,7 @@ async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
     return db_user
 
 
-async def update_user(db: AsyncSession, user_id: int, user_in: UserUpdate) -> Optional[User]:
+async def update_user(db: AsyncSession, user_id: UUID, user_in: UserUpdate) -> Optional[User]:
     """Update a user."""
     db_user = await get_user(db, user_id)
     if not db_user:
@@ -68,7 +70,7 @@ async def update_user(db: AsyncSession, user_id: int, user_in: UserUpdate) -> Op
     return db_user
 
 
-async def delete_user(db: AsyncSession, user_id: int) -> Optional[User]:
+async def delete_user(db: AsyncSession, user_id: UUID) -> Optional[User]:
     """Delete a user."""
     db_user = await get_user(db, user_id)
     if not db_user:

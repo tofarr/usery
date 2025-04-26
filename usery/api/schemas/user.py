@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Optional
+import uuid
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, UUID4
 
 
 class UserBase(BaseModel):
@@ -32,7 +33,7 @@ class UserUpdate(BaseModel):
 class UserInDBBase(UserBase):
     """Base schema for users in DB."""
     
-    id: int
+    id: UUID4
     created_at: datetime
     updated_at: Optional[datetime] = None
 
