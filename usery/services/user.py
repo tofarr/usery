@@ -1,10 +1,11 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 from uuid import UUID
 
 from usery.models.user import User
+from usery.models.user_tag import UserTag
 from usery.api.schemas.user import UserCreate, UserUpdate
 from usery.services.security import get_password_hash, verify_password
 
@@ -33,6 +34,33 @@ async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[U
     return result.scalars().all()
 
 
+async def get_user_with_tags(db: AsyncSession, user_id: UUID) -> Optional[Dict]:
+    """Get a user with their tags."""
+    db_user = await get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    result = await db.execute(
+        select(UserTag.tag_code).filter(UserTag.user_id == user_id)
+    )
+    tag_codes = result.scalars().all()
+    
+    return {"user": db_user, "tags": tag_codes}
+
+
+async def get_users_by_tag(db: AsyncSession, tag_code: str, skip: int = 0, limit: int = 100) -> List[User]:
+    """Get all users with a specific tag."""
+    query = (
+        select(User)
+        .join(UserTag, User.id == UserTag.user_id)
+        .filter(UserTag.tag_code == tag_code)
+        .offset(skip)
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
 async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
     """Create a new user."""
     db_user = User(
@@ -41,6 +69,7 @@ async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
         hashed_password=get_password_hash(user_in.password),
         full_name=user_in.full_name,
         is_active=user_in.is_active,
+        is_superuser=user_in.is_superuser,
     )
     db.add(db_user)
     await db.commit()

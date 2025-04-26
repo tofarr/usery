@@ -10,7 +10,10 @@ from alembic import context
 
 from usery.config.settings import settings
 from usery.db.session import Base, DATABASE_URL
-from usery.models.user import User  # Import all models here
+# Import all models here
+from usery.models.user import User
+from usery.models.tag import Tag
+from usery.models.user_tag import UserTag
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 import uuid
 
 from pydantic import BaseModel, EmailStr, Field, UUID4
@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     username: str
     full_name: Optional[str] = None
     is_active: bool = True
+    is_superuser: bool = False
 
 
 class UserCreate(UserBase):
@@ -50,3 +51,9 @@ class UserInDB(UserInDBBase):
     """Schema for user in DB with hashed password."""
     
     hashed_password: str
+
+
+class UserWithTags(User):
+    """Schema for user with tags."""
+    
+    tags: List[str] = []  # List of tag codes
