@@ -1,32 +1,37 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from usery.models.user import User
 from usery.api.schemas.user import UserCreate, UserUpdate
 from usery.services.security import get_password_hash, verify_password
 
 
-def get_user(db: Session, user_id: int) -> Optional[User]:
+async def get_user(db: AsyncSession, user_id: int) -> Optional[User]:
     """Get a user by ID."""
-    return db.query(User).filter(User.id == user_id).first()
+    result = await db.execute(select(User).filter(User.id == user_id))
+    return result.scalars().first()
 
 
-def get_user_by_email(db: Session, email: str) -> Optional[User]:
+async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
     """Get a user by email."""
-    return db.query(User).filter(User.email == email).first()
+    result = await db.execute(select(User).filter(User.email == email))
+    return result.scalars().first()
 
 
-def get_user_by_username(db: Session, username: str) -> Optional[User]:
+async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User]:
     """Get a user by username."""
-    return db.query(User).filter(User.username == username).first()
+    result = await db.execute(select(User).filter(User.username == username))
+    return result.scalars().first()
 
 
-def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
+async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[User]:
     """Get a list of users."""
-    return db.query(User).offset(skip).limit(limit).all()
+    result = await db.execute(select(User).offset(skip).limit(limit))
+    return result.scalars().all()
 
 
-def create_user(db: Session, user_in: UserCreate) -> User:
+async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
     """Create a new user."""
     db_user = User(
         email=user_in.email,
@@ -36,14 +41,14 @@ def create_user(db: Session, user_in: UserCreate) -> User:
         is_active=user_in.is_active,
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    await db.commit()
+    await db.refresh(db_user)
     return db_user
 
 
-def update_user(db: Session, user_id: int, user_in: UserUpdate) -> Optional[User]:
+async def update_user(db: AsyncSession, user_id: int, user_in: UserUpdate) -> Optional[User]:
     """Update a user."""
-    db_user = get_user(db, user_id)
+    db_user = await get_user(db, user_id)
     if not db_user:
         return None
     
@@ -58,25 +63,25 @@ def update_user(db: Session, user_id: int, user_in: UserUpdate) -> Optional[User
         setattr(db_user, field, value)
     
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    await db.commit()
+    await db.refresh(db_user)
     return db_user
 
 
-def delete_user(db: Session, user_id: int) -> Optional[User]:
+async def delete_user(db: AsyncSession, user_id: int) -> Optional[User]:
     """Delete a user."""
-    db_user = get_user(db, user_id)
+    db_user = await get_user(db, user_id)
     if not db_user:
         return None
     
-    db.delete(db_user)
-    db.commit()
+    await db.delete(db_user)
+    await db.commit()
     return db_user
 
 
-def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
+async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
     """Authenticate a user."""
-    user = get_user_by_username(db, username)
+    user = await get_user_by_username(db, username)
     if not user:
         return None
     if not verify_password(password, user.hashed_password):

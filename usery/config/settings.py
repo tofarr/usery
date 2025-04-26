@@ -16,6 +16,10 @@ class Settings(BaseSettings):
         default="sqlite:///./usery.db", 
         description="Database connection string"
     )
+    SQL_ECHO: bool = Field(
+        default=False,
+        description="Enable SQL query logging"
+    )
     
     # Redis settings
     REDIS_HOST: str = "localhost"

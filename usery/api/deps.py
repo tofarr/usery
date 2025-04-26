@@ -1,12 +1,12 @@
-from typing import Generator, Optional
+from typing import AsyncGenerator, Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from jose.exceptions import JWTError
 from pydantic import ValidationError
-from redis.client import Redis
-from sqlalchemy.orm import Session
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from usery.api.schemas.auth import TokenPayload
 from usery.config.settings import settings
@@ -19,15 +19,15 @@ from usery.services.user import get_user
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
 
-def get_current_user(
-    db: Session = Depends(get_db),
+async def get_current_user(
+    db: AsyncSession = Depends(get_db),
     token: str = Depends(oauth2_scheme),
     redis_client: Redis = Depends(get_redis),
 ) -> User:
     """
     Get the current user from the token.
     """
-    if is_token_blacklisted(redis_client, token):
+    if await is_token_blacklisted(redis_client, token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been revoked",
@@ -46,7 +46,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    user = get_user(db, user_id=int(token_data.sub))
+    user = await get_user(db, user_id=int(token_data.sub))
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -56,7 +56,7 @@ def get_current_user(
     return user
 
 
-def get_current_active_user(
+async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
     """
