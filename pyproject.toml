@@ -1,0 +1,28 @@
+[project]
+name = "usery"
+version = "0.1.0"
+description = "User management system with REST API"
+authors = [
+    {name = "OpenHands",email = "openhands@all-hands.dev"}
+]
+readme = "README.md"
+requires-python = "^3.9"
+dependencies = [
+    "fastapi>=0.115.0,<0.116.0",
+    "sqlalchemy>=2.0.0,<3.0.0",
+    "alembic>=1.15.0,<2.0.0",
+    "redis>=5.0.0,<6.0.0",
+    "uvicorn>=0.34.0,<0.35.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "pydantic-settings>=2.0.0,<3.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    "passlib>=1.7.4,<2.0.0",
+    "python-jose>=3.3.0,<4.0.0",
+    "email-validator>=2.0.0,<3.0.0",
+    "bcrypt>=4.0.0,<5.0.0",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
