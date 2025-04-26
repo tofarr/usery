@@ -30,6 +30,9 @@ class AttributeInDBBase(AttributeBase):
 
     class Config:
         from_attributes = True
+        # Map schema field from DB to json_schema in API
+        populate_by_name = True
+        alias_generator = lambda field: "schema" if field == "json_schema" else field
 
 
 class Attribute(AttributeInDBBase):

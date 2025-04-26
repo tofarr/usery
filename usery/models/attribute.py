@@ -13,7 +13,7 @@ class Attribute(Base):
     __tablename__ = "attributes"
 
     id = Column(UUIDType, primary_key=True, index=True, default=uuid.uuid4)
-    schema = Column(JSON, nullable=False)
+    schema = Column(JSON, nullable=False)  # Keep as 'schema' in the database but map to 'json_schema' in the API
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

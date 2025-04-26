@@ -53,7 +53,7 @@ async def get_attributes_with_user_count(db: AsyncSession, skip: int = 0, limit:
 async def create_attribute(db: AsyncSession, attribute_in: AttributeCreate) -> Attribute:
     """Create a new attribute."""
     db_attribute = Attribute(
-        schema=attribute_in.json_schema,
+        schema=attribute_in.json_schema,  # Map json_schema from API to schema in DB
     )
     db.add(db_attribute)
     await db.commit()
@@ -68,6 +68,10 @@ async def update_attribute(db: AsyncSession, id: UUID, attribute_in: AttributeUp
         return None
     
     update_data = attribute_in.model_dump(exclude_unset=True)
+    
+    # Map json_schema to schema if present
+    if 'json_schema' in update_data:
+        update_data['schema'] = update_data.pop('json_schema')
     
     for field, value in update_data.items():
         setattr(db_attribute, field, value)

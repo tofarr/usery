@@ -40,7 +40,7 @@ async def read_attributes_with_user_count(
     return [
         AttributeWithUserCount(
             id=item["attribute"].id,
-            json_schema=item["attribute"].schema,
+            json_schema=item["attribute"].schema,  # Map schema from DB to json_schema in API
             created_at=item["attribute"].created_at,
             updated_at=item["attribute"].updated_at,
             user_count=item["user_count"]
@@ -104,7 +104,7 @@ async def read_attribute_with_user_count(
     
     return AttributeWithUserCount(
         id=attribute_with_count["attribute"].id,
-        json_schema=attribute_with_count["attribute"].schema,
+        json_schema=attribute_with_count["attribute"].schema,  # Map schema from DB to json_schema in API
         created_at=attribute_with_count["attribute"].created_at,
         updated_at=attribute_with_count["attribute"].updated_at,
         user_count=attribute_with_count["user_count"]
