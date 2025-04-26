@@ -61,3 +61,4 @@ class User(Base):
     
     # Relationships
     tags = relationship("UserTag", back_populates="user", cascade="all, delete-orphan")
+    attributes = relationship("UserAttribute", back_populates="user", cascade="all, delete-orphan")
