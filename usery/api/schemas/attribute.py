@@ -8,7 +8,8 @@ class AttributeBase(BaseModel):
     """Base attribute schema."""
     
     json_schema: Dict[str, Any] = Field(..., description="JSON schema for the attribute")
-    requires_superuser: bool = False
+    edit_requires_superuser: bool = False
+    view_requires_superuser: bool = False
 
 
 class AttributeCreate(AttributeBase):
@@ -20,7 +21,8 @@ class AttributeUpdate(BaseModel):
     """Schema for updating an attribute."""
     
     json_schema: Optional[Dict[str, Any]] = Field(None, description="JSON schema for the attribute")
-    requires_superuser: Optional[bool] = None
+    edit_requires_superuser: Optional[bool] = None
+    view_requires_superuser: Optional[bool] = None
 
 
 class AttributeInDBBase(AttributeBase):

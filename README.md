@@ -83,3 +83,12 @@ The application can be configured using environment variables or a `.env` file:
   - `private`: Only superusers can list users. Users can view themselves.
   - `protected`: Only active users can list users. Users can view themselves.
   - `public`: No login required to list users.
+
+## Attribute and Tag Permissions
+
+Attributes and tags can be configured with specific permission requirements:
+
+- `edit_requires_superuser`: When set to `True`, only superusers can create, update, or delete user attributes/tags with this attribute/tag. Regular users cannot modify their own attributes/tags if this is set.
+- `view_requires_superuser`: When set to `True`, only superusers can view user attributes/tags with this attribute/tag. Regular users cannot view their own attributes/tags if this is set.
+
+This allows for storing sensitive information that should only be accessible to administrators.

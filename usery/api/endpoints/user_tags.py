@@ -41,6 +41,16 @@ async def read_user_tags(
     
     # Get user tags
     user_tags = await user_tag_service.get_user_tags_with_details(db, user_id=user_id)
+    
+    # Filter out tags that require superuser for viewing if the current user is not a superuser
+    if not current_user.is_superuser:
+        filtered_tags = []
+        for item in user_tags:
+            tag = item["tag"]
+            if not tag.view_requires_superuser:
+                filtered_tags.append(tag)
+        return filtered_tags
+    
     return [item["tag"] for item in user_tags]
 
 
@@ -77,8 +87,8 @@ async def add_user_tag(
             detail="Tag not found",
         )
     
-    # Check if tag requires superuser and current user is not a superuser
-    if tag.requires_superuser and not current_user.is_superuser:
+    # Check if tag requires superuser for editing and current user is not a superuser
+    if tag.edit_requires_superuser and not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This tag requires superuser privileges to assign",
@@ -122,9 +132,9 @@ async def remove_user_tag(
             detail="Not enough permissions to modify this user's tags",
         )
     
-    # Check if tag exists and requires superuser
+    # Check if tag exists and requires superuser for editing
     tag = await tag_service.get_tag(db, code=tag_code)
-    if tag and tag.requires_superuser and not current_user.is_superuser:
+    if tag and tag.edit_requires_superuser and not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This tag requires superuser privileges to remove",
@@ -179,8 +189,8 @@ async def batch_user_tags_operations(
                 if not tag:
                     raise ValueError(f"Tag with code {tag_code} not found")
                 
-                # Check if tag requires superuser and current user is not a superuser
-                if tag.requires_superuser and not current_user.is_superuser:
+                # Check if tag requires superuser for editing and current user is not a superuser
+                if tag.edit_requires_superuser and not current_user.is_superuser:
                     raise ValueError(f"Tag {tag_code} requires superuser privileges to assign")
                 
                 # Check if user already has this tag
@@ -214,9 +224,9 @@ async def batch_user_tags_operations(
                 if current_user.id != user_id and not current_user.is_superuser:
                     raise ValueError(f"Not enough permissions to modify user {user_id}'s tags")
                 
-                # Check if tag exists and requires superuser
+                # Check if tag exists and requires superuser for editing
                 tag = await tag_service.get_tag(db, code=tag_code)
-                if tag and tag.requires_superuser and not current_user.is_superuser:
+                if tag and tag.edit_requires_superuser and not current_user.is_superuser:
                     raise ValueError(f"Tag {tag_code} requires superuser privileges to remove")
                 
                 # Delete user tag

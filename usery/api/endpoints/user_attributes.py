@@ -67,8 +67,8 @@ async def create_user_attribute(
             detail="Attribute not found",
         )
     
-    # Check if attribute requires superuser and current user is not a superuser
-    if attribute.requires_superuser and not current_user.is_superuser:
+    # Check if attribute requires superuser for editing and current user is not a superuser
+    if attribute.edit_requires_superuser and not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This attribute requires superuser privileges to assign",
@@ -110,6 +110,14 @@ async def read_user_attribute(
             detail="Not enough permissions to access this user attribute",
         )
     
+    # Check if attribute requires superuser for viewing
+    attribute = await attribute_service.get_attribute(db, id=user_attribute.attribute_id)
+    if attribute and attribute.view_requires_superuser and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This attribute requires superuser privileges to view",
+        )
+    
     return user_attribute
 
 
@@ -137,9 +145,9 @@ async def update_user_attribute(
             detail="Not enough permissions to update this user attribute",
         )
     
-    # Check if attribute requires superuser
+    # Check if attribute requires superuser for editing
     attribute = await attribute_service.get_attribute(db, id=user_attribute.attribute_id)
-    if attribute and attribute.requires_superuser and not current_user.is_superuser:
+    if attribute and attribute.edit_requires_superuser and not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This attribute requires superuser privileges to modify",
@@ -174,9 +182,9 @@ async def delete_user_attribute(
             detail="Not enough permissions to delete this user attribute",
         )
     
-    # Check if attribute requires superuser
+    # Check if attribute requires superuser for editing
     attribute = await attribute_service.get_attribute(db, id=user_attribute.attribute_id)
-    if attribute and attribute.requires_superuser and not current_user.is_superuser:
+    if attribute and attribute.edit_requires_superuser and not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This attribute requires superuser privileges to remove",
@@ -224,8 +232,8 @@ async def batch_user_attributes_operations(
                 if not attribute:
                     raise ValueError(f"Attribute with ID {attribute_id} not found")
                 
-                # Check if attribute requires superuser and current user is not a superuser
-                if attribute.requires_superuser and not current_user.is_superuser:
+                # Check if attribute requires superuser for editing and current user is not a superuser
+                if attribute.edit_requires_superuser and not current_user.is_superuser:
                     raise ValueError(f"Attribute {attribute_id} requires superuser privileges to assign")
                 
                 # Check if user attribute already exists
@@ -264,9 +272,9 @@ async def batch_user_attributes_operations(
                 if current_user.id != user_attribute.user_id and not current_user.is_superuser:
                     raise ValueError(f"Not enough permissions to update this user attribute")
                 
-                # Check if attribute requires superuser
+                # Check if attribute requires superuser for editing
                 attribute = await attribute_service.get_attribute(db, id=user_attribute.attribute_id)
-                if attribute and attribute.requires_superuser and not current_user.is_superuser:
+                if attribute and attribute.edit_requires_superuser and not current_user.is_superuser:
                     raise ValueError(f"Attribute {attribute.id} requires superuser privileges to modify")
                 
                 # Update user attribute
@@ -295,9 +303,9 @@ async def batch_user_attributes_operations(
                 if current_user.id != user_attribute.user_id and not current_user.is_superuser:
                     raise ValueError(f"Not enough permissions to delete this user attribute")
                 
-                # Check if attribute requires superuser
+                # Check if attribute requires superuser for editing
                 attribute = await attribute_service.get_attribute(db, id=user_attribute.attribute_id)
-                if attribute and attribute.requires_superuser and not current_user.is_superuser:
+                if attribute and attribute.edit_requires_superuser and not current_user.is_superuser:
                     raise ValueError(f"Attribute {attribute.id} requires superuser privileges to remove")
                 
                 # Delete user attribute
@@ -353,9 +361,21 @@ async def read_user_attributes_by_user(
             detail="User not found",
         )
     
+    # Get all user attributes for the user
     user_attributes = await user_attribute_service.get_user_attributes_by_user(
         db, user_id=user_id, skip=skip, limit=limit
     )
+    
+    # Filter out attributes that require superuser for viewing if the current user is not a superuser
+    if not current_user.is_superuser:
+        filtered_user_attributes = []
+        for user_attribute in user_attributes:
+            # Get the attribute to check if it requires superuser for viewing
+            attribute = await attribute_service.get_attribute(db, id=user_attribute.attribute_id)
+            if attribute and not attribute.view_requires_superuser:
+                filtered_user_attributes.append(user_attribute)
+        return filtered_user_attributes
+    
     return user_attributes
 
 

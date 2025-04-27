@@ -10,7 +10,8 @@ class TagBase(BaseModel):
     code: str = Field(..., min_length=1, max_length=50)
     title: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
-    requires_superuser: bool = False
+    edit_requires_superuser: bool = False
+    view_requires_superuser: bool = False
 
 
 class TagCreate(TagBase):
@@ -23,7 +24,8 @@ class TagUpdate(BaseModel):
     
     title: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
-    requires_superuser: Optional[bool] = None
+    edit_requires_superuser: Optional[bool] = None
+    view_requires_superuser: Optional[bool] = None
 
 
 class TagInDBBase(TagBase):
