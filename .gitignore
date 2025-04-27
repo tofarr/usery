@@ -49,3 +49,6 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# JWT Secret
+.jwt_secret

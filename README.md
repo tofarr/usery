@@ -77,7 +77,11 @@ The application can be configured using environment variables or a `.env` file:
 - `REDIS_PORT`: Redis port
 - `REDIS_PASSWORD`: Redis password (optional)
 - `SECRET_KEY`: Secret key for general application use
-- `JWT_SECRET_KEY`: Secret key for JWT token generation (HS256). If not provided, a random key will be generated on application startup.
+- `JWT_SECRET_KEY`: Secret key for JWT token generation (HS256). If not provided, the system will:
+  1. Look for an existing key in the `.jwt_secret` file
+  2. If no file exists, generate a random key and save it to `.jwt_secret`
+  
+  This ensures that tokens remain valid across application restarts.
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration time in minutes
 - `SUPERUSER_ONLY_CREATE_USERS`: If set to `True`, only superusers can create new users. If `False` (default), anyone can register. Note: The first user created in the system will always be a superuser, regardless of this setting.
 - `USER_VISIBILITY`: Controls who can view user information:

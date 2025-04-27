@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import os
 import secrets
 from typing import Any, Dict, Optional, Union
 
@@ -13,10 +14,51 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Always use HS256 for JWT tokens
 ALGORITHM = "HS256"
 
-# Generate a random JWT secret key if not provided in environment
-_JWT_SECRET_KEY = settings.JWT_SECRET_KEY
-if not _JWT_SECRET_KEY:
-    _JWT_SECRET_KEY = secrets.token_hex(32)  # Generate a secure random key
+# JWT secret key file path
+JWT_SECRET_FILE = ".jwt_secret"
+
+# Get or generate JWT secret key
+def get_jwt_secret_key() -> str:
+    """
+    Get the JWT secret key from environment, file, or generate a new one.
+    
+    Priority:
+    1. Environment variable JWT_SECRET_KEY
+    2. Existing .jwt_secret file
+    3. Generate new key and save to .jwt_secret file
+    """
+    # Check environment variable first
+    if settings.JWT_SECRET_KEY:
+        return settings.JWT_SECRET_KEY
+    
+    # Check for existing secret file
+    if os.path.exists(JWT_SECRET_FILE):
+        try:
+            with open(JWT_SECRET_FILE, "r") as f:
+                key = f.read().strip()
+                if key:
+                    return key
+        except Exception:
+            # If there's any issue reading the file, we'll generate a new key
+            pass
+    
+    # Generate a new key
+    new_key = secrets.token_hex(32)
+    
+    # Save the key to file
+    try:
+        with open(JWT_SECRET_FILE, "w") as f:
+            f.write(new_key)
+        # Set appropriate permissions (readable only by owner)
+        os.chmod(JWT_SECRET_FILE, 0o600)
+    except Exception:
+        # If we can't save the key, just use it for this session
+        pass
+        
+    return new_key
+
+# Initialize the JWT secret key
+_JWT_SECRET_KEY = get_jwt_secret_key()
 
 
 def create_access_token(
