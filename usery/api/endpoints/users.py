@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from usery.api.deps import get_current_active_user, get_current_superuser
 from usery.api.schemas.user import User, UserCreate, UserUpdate, UserWithTags
 from usery.api.schemas.batch import BatchRequest, BatchResponse, BatchResponseItem, BatchOperationType
+from usery.config.settings import settings
 from usery.db.session import get_db
 from usery.models.user import User as UserModel
 from usery.services.user import (
@@ -42,10 +43,16 @@ async def create_new_user(
     *,
     db: AsyncSession = Depends(get_db),
     user_in: UserCreate,
+    current_user: UserModel = Depends(get_current_superuser) if settings.SUPERUSER_ONLY_CREATE_USERS else None,
 ) -> Any:
     """
     Create new user.
+    
+    If SUPERUSER_ONLY_CREATE_USERS setting is True, only superusers can create new users.
+    Otherwise, anyone can register.
     """
+    # If SUPERUSER_ONLY_CREATE_USERS is True, the dependency will ensure only superusers can access this endpoint
+    
     user = await get_user_by_email(db, email=user_in.email)
     if user:
         raise HTTPException(

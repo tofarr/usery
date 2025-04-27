@@ -33,6 +33,10 @@ class Settings(BaseSettings):
         description="Secret key for JWT token generation"
     )
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    SUPERUSER_ONLY_CREATE_USERS: bool = Field(
+        default=False,
+        description="If True, only superusers can create new users. If False, anyone can register."
+    )
     
     class Config:
         env_file = ".env"

@@ -78,3 +78,4 @@ The application can be configured using environment variables or a `.env` file:
 - `REDIS_PASSWORD`: Redis password (optional)
 - `SECRET_KEY`: Secret key for JWT token generation
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration time in minutes
+- `SUPERUSER_ONLY_CREATE_USERS`: If set to `True`, only superusers can create new users. If `False` (default), anyone can register.
