@@ -76,8 +76,34 @@ The application can be configured using environment variables or a `.env` file:
 - `REDIS_HOST`: Redis host
 - `REDIS_PORT`: Redis port
 - `REDIS_PASSWORD`: Redis password (optional)
-- `SECRET_KEY`: Secret key for JWT token generation
+- `SECRET_KEY`: Secret key for JWT token generation (used for HS256 algorithm)
+- `JWT_PRIVATE_KEY`: RSA private key for JWT token signing (used for RS256 algorithm)
+- `JWT_PUBLIC_KEY`: RSA public key for JWT token verification (used for RS256 algorithm)
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration time in minutes
+
+Note: If both `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are provided, the application will use RS256 algorithm for JWT signing. Otherwise, it will fall back to HS256 with the `SECRET_KEY`.
+
+### Generating RSA Keys for JWT Signing
+
+You can generate RSA keys for JWT signing using OpenSSL:
+
+```bash
+# Generate private key
+openssl genrsa -out private.pem 2048
+
+# Extract public key
+openssl rsa -in private.pem -pubout -out public.pem
+```
+
+Then set the environment variables with the contents of these files:
+
+```bash
+export JWT_PRIVATE_KEY="$(cat private.pem)"
+export JWT_PUBLIC_KEY="$(cat public.pem)"
+```
+
+Or include them in your .env file (make sure to preserve the newlines).
+
 - `SUPERUSER_ONLY_CREATE_USERS`: If set to `True`, only superusers can create new users. If `False` (default), anyone can register. Note: The first user created in the system will always be a superuser, regardless of this setting.
 - `USER_VISIBILITY`: Controls who can view user information:
   - `private`: Only superusers can list users. Users can view themselves.
