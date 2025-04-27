@@ -1,7 +1,7 @@
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional, Union, Callable
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from jose.exceptions import JWTError
@@ -107,3 +107,23 @@ async def get_current_superuser(
         )
     
     return current_user
+
+
+def get_user_visibility_dependency() -> Callable:
+    """
+    Returns the appropriate dependency based on the USER_VISIBILITY setting.
+    
+    - 'private': Only superusers can list users
+    - 'protected': Only active users can list users
+    - 'public': No login required to list users
+    """
+    if settings.USER_VISIBILITY == "private":
+        return get_current_superuser
+    elif settings.USER_VISIBILITY == "protected":
+        return get_current_active_user
+    elif settings.USER_VISIBILITY == "public":
+        # No dependency needed for public visibility
+        return lambda: None
+    else:
+        # Default to protected if an invalid value is provided
+        return get_current_active_user

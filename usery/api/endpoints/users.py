@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from usery.api.deps import get_current_active_user, get_current_superuser
+from usery.api.deps import get_current_active_user, get_current_superuser, get_user_visibility_dependency
 from usery.api.schemas.user import User, UserCreate, UserUpdate, UserWithTags
 from usery.api.schemas.batch import BatchRequest, BatchResponse, BatchResponseItem, BatchOperationType
 from usery.config.settings import settings
@@ -30,10 +30,15 @@ async def read_users(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: UserModel = Depends(get_current_active_user),
+    _: Any = Depends(get_user_visibility_dependency()),
 ) -> Any:
     """
     Retrieve users.
+    
+    Access depends on USER_VISIBILITY setting:
+    - 'private': Only superusers can list users
+    - 'protected': Only active users can list users
+    - 'public': No login required to list users
     """
     users = await get_users(db, skip=skip, limit=limit)
     return users
@@ -86,9 +91,13 @@ async def read_user(
     *,
     db: AsyncSession = Depends(get_db),
     user_id: UUID,
+    current_user: UserModel = Depends(get_current_active_user),
 ) -> Any:
     """
     Get a specific user by id.
+    
+    Users can always view their own profile.
+    For other users, access depends on USER_VISIBILITY setting and user permissions.
     """
     user = await get_user(db, user_id=user_id)
     if not user:
@@ -96,6 +105,15 @@ async def read_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+    
+    # Check if user has permission to view this profile
+    if user_id != current_user.id:  # Not viewing own profile
+        if settings.USER_VISIBILITY == "private" and not current_user.is_superuser:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions to view this user",
+            )
+    
     return user
 
 
@@ -108,6 +126,9 @@ async def read_user_with_tags(
 ) -> Any:
     """
     Get a specific user by id with their tags.
+    
+    Users can always view their own profile with tags.
+    For other users, access depends on USER_VISIBILITY setting and user permissions.
     """
     result = await get_user_with_tags(db, user_id=user_id)
     if not result:
@@ -115,6 +136,14 @@ async def read_user_with_tags(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+    
+    # Check if user has permission to view this profile
+    if user_id != current_user.id:  # Not viewing own profile
+        if settings.USER_VISIBILITY == "private" and not current_user.is_superuser:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions to view this user",
+            )
     
     return UserWithTags(
         id=result["user"].id,

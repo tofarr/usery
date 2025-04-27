@@ -79,3 +79,7 @@ The application can be configured using environment variables or a `.env` file:
 - `SECRET_KEY`: Secret key for JWT token generation
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration time in minutes
 - `SUPERUSER_ONLY_CREATE_USERS`: If set to `True`, only superusers can create new users. If `False` (default), anyone can register. Note: The first user created in the system will always be a superuser, regardless of this setting.
+- `USER_VISIBILITY`: Controls who can view user information:
+  - `private`: Only superusers can list users. Users can view themselves.
+  - `protected`: Only active users can list users. Users can view themselves.
+  - `public`: No login required to list users.

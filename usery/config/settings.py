@@ -37,6 +37,13 @@ class Settings(BaseSettings):
         default=False,
         description="If True, only superusers can create new users. If False, anyone can register."
     )
+    USER_VISIBILITY: str = Field(
+        default="protected",
+        description="""Controls who can view user information:
+        - 'private': Only superusers can list users. Users can view themselves.
+        - 'protected': Only active users can list users. Users can view themselves.
+        - 'public': No login required to list users."""
+    )
     
     class Config:
         env_file = ".env"
