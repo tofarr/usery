@@ -1,8 +1,11 @@
+import re
 from sqlalchemy import Column, String, DateTime, Boolean
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
 from usery.db.session import Base
+
+CODE_PATTERN = r"^[a-z0-9_]+$"
 
 
 class Tag(Base):
@@ -20,3 +23,8 @@ class Tag(Base):
     
     # Relationships
     users = relationship("UserTag", back_populates="tag", cascade="all, delete-orphan")
+
+    @validates('code')
+    def validate_name(self, key, value):
+        assert re.match(CODE_PATTERN, value)
+        return value

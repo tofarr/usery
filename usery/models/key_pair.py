@@ -1,8 +1,7 @@
-from sqlalchemy import Boolean, Column, String, DateTime
+from sqlalchemy import Boolean, Column, String, DateTime, UUID
 from sqlalchemy.sql import func
 
 from usery.db.session import Base
-from usery.models.user import UUIDType
 import uuid
 
 
@@ -11,7 +10,7 @@ class KeyPair(Base):
     
     __tablename__ = "key_pairs"
 
-    id = Column(UUIDType, primary_key=True, index=True, default=uuid.uuid4)
+    id = Column(UUID, primary_key=True, index=True, default=uuid.uuid4)
     algorithm = Column(String, nullable=False)
     public_key = Column(String, nullable=False)
     private_key = Column(String, nullable=False)

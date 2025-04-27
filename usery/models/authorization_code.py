@@ -1,10 +1,9 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Boolean
+from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Boolean, UUID
 from sqlalchemy.sql import func
 import uuid
 import secrets
 
 from usery.db.session import Base
-from usery.models.user import UUIDType
 
 
 class AuthorizationCode(Base):
@@ -12,10 +11,10 @@ class AuthorizationCode(Base):
     
     __tablename__ = "authorization_codes"
 
-    id = Column(UUIDType, primary_key=True, index=True, default=uuid.uuid4)
+    id = Column(UUID, primary_key=True, index=True, default=uuid.uuid4)
     code = Column(String, nullable=False, index=True, unique=True, default=lambda: secrets.token_urlsafe(48))
-    client_id = Column(UUIDType, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(UUIDType, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    client_id = Column(UUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     redirect_uri = Column(String, nullable=False)
     scope = Column(String, nullable=False)
     nonce = Column(String, nullable=True)

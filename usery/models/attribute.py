@@ -1,10 +1,9 @@
-from sqlalchemy import Column, String, DateTime, JSON, Boolean
+from sqlalchemy import Column, DateTime, JSON, Boolean, UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
 from usery.db.session import Base
-from usery.models.user import UUIDType
 
 
 class Attribute(Base):
@@ -12,7 +11,7 @@ class Attribute(Base):
     
     __tablename__ = "attributes"
 
-    id = Column(UUIDType, primary_key=True, index=True, default=uuid.uuid4)
+    id = Column(UUID, primary_key=True, index=True, default=uuid.uuid4)
     schema = Column(JSON, nullable=False)  # Keep as 'schema' in the database but map to 'json_schema' in the API
     edit_requires_superuser = Column(Boolean, default=False, nullable=False)
     view_requires_superuser = Column(Boolean, default=False, nullable=False)

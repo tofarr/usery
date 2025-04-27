@@ -1,10 +1,9 @@
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, JSON, Text
+from sqlalchemy import Column, String, DateTime, Integer, Boolean, JSON, UUID
 from sqlalchemy.sql import func
 import uuid
 import secrets
 
 from usery.db.session import Base
-from usery.models.user import UUIDType
 
 
 class Client(Base):
@@ -12,7 +11,7 @@ class Client(Base):
     
     __tablename__ = "clients"
 
-    id = Column(UUIDType, primary_key=True, index=True, default=uuid.uuid4)
+    id = Column(UUID, primary_key=True, index=True, default=uuid.uuid4)
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
     client_secret = Column(String, nullable=False, default=lambda: secrets.token_hex(32))
