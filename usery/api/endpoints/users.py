@@ -4,8 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from usery.api.deps import get_current_active_user
+from usery.api.deps import get_current_active_user, get_current_superuser
 from usery.api.schemas.user import User, UserCreate, UserUpdate, UserWithTags
+from usery.api.schemas.batch import BatchRequest, BatchResponse, BatchResponseItem, BatchOperationType
 from usery.db.session import get_db
 from usery.models.user import User as UserModel
 from usery.services.user import (
@@ -165,3 +166,114 @@ async def delete_user_by_id(
     
     user = await delete_user(db, user_id=user_id)
     return user
+
+
+@router.post("/batch", response_model=BatchResponse)
+async def batch_users_operations(
+    *,
+    db: AsyncSession = Depends(get_db),
+    batch_request: BatchRequest[UserCreate | UserUpdate],
+    current_user: UserModel = Depends(get_current_superuser),
+) -> Any:
+    """
+    Perform batch operations on users (create, update, delete).
+    Only superusers can perform batch operations.
+    """
+    results = []
+    success_count = 0
+    error_count = 0
+
+    for index, operation in enumerate(batch_request.operations):
+        try:
+            if operation.operation == BatchOperationType.CREATE:
+                if not operation.data:
+                    raise ValueError("Data is required for create operation")
+                
+                # Check if user with email already exists
+                user_data = operation.data
+                existing_user = await get_user_by_email(db, email=user_data.email)
+                if existing_user:
+                    raise ValueError(f"User with email {user_data.email} already exists")
+                
+                # Check if user with username already exists
+                existing_user = await get_user_by_username(db, username=user_data.username)
+                if existing_user:
+                    raise ValueError(f"User with username {user_data.username} already exists")
+                
+                user = await create_user(db, user_in=user_data)
+                results.append(BatchResponseItem(
+                    success=True,
+                    data=user,
+                    index=index
+                ))
+                success_count += 1
+                
+            elif operation.operation == BatchOperationType.UPDATE:
+                if not operation.id:
+                    raise ValueError("ID is required for update operation")
+                if not operation.data:
+                    raise ValueError("Data is required for update operation")
+                
+                user_id = operation.id
+                user_data = operation.data
+                
+                # Check if user exists
+                user = await get_user(db, user_id=user_id)
+                if not user:
+                    raise ValueError(f"User with ID {user_id} not found")
+                
+                # Check for email uniqueness if changing email
+                if user_data.email is not None and user_data.email != user.email:
+                    existing_user = await get_user_by_email(db, email=user_data.email)
+                    if existing_user:
+                        raise ValueError(f"Email {user_data.email} already registered")
+                
+                # Check for username uniqueness if changing username
+                if user_data.username is not None and user_data.username != user.username:
+                    existing_user = await get_user_by_username(db, username=user_data.username)
+                    if existing_user:
+                        raise ValueError(f"Username {user_data.username} already registered")
+                
+                updated_user = await update_user(db, user_id=user_id, user_in=user_data)
+                results.append(BatchResponseItem(
+                    success=True,
+                    data=updated_user,
+                    index=index
+                ))
+                success_count += 1
+                
+            elif operation.operation == BatchOperationType.DELETE:
+                if not operation.id:
+                    raise ValueError("ID is required for delete operation")
+                
+                user_id = operation.id
+                
+                # Check if user exists
+                user = await get_user(db, user_id=user_id)
+                if not user:
+                    raise ValueError(f"User with ID {user_id} not found")
+                
+                deleted_user = await delete_user(db, user_id=user_id)
+                results.append(BatchResponseItem(
+                    success=True,
+                    data=deleted_user,
+                    index=index
+                ))
+                success_count += 1
+                
+            else:
+                raise ValueError(f"Unknown operation type: {operation.operation}")
+                
+        except Exception as e:
+            results.append(BatchResponseItem(
+                success=False,
+                error=str(e),
+                index=index
+            ))
+            error_count += 1
+    
+    return BatchResponse(
+        results=results,
+        success_count=success_count,
+        error_count=error_count
+    )

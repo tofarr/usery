@@ -1,9 +1,10 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from usery.api.deps import get_current_user, get_db
+from usery.api.deps import get_current_user, get_db, get_current_superuser
 from usery.api.schemas.tag import Tag, TagCreate, TagUpdate, TagWithUsers
 from usery.api.schemas.user import User
+from usery.api.schemas.batch import BatchRequest, BatchResponse, BatchResponseItem, BatchOperationType
 from usery.services import tag as tag_service
 from usery.services import user as user_service
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -172,6 +173,100 @@ async def delete_tag(
         )
     
     return tag
+
+
+@router.post("/batch", response_model=BatchResponse)
+async def batch_tags_operations(
+    *,
+    db: AsyncSession = Depends(get_db),
+    batch_request: BatchRequest[TagCreate | TagUpdate],
+    current_user: User = Depends(get_current_superuser),
+) -> Any:
+    """
+    Perform batch operations on tags (create, update, delete).
+    Only superusers can perform batch operations.
+    """
+    results = []
+    success_count = 0
+    error_count = 0
+
+    for index, operation in enumerate(batch_request.operations):
+        try:
+            if operation.operation == BatchOperationType.CREATE:
+                if not operation.data:
+                    raise ValueError("Data is required for create operation")
+                
+                # Check if tag with this code already exists
+                tag_data = operation.data
+                existing_tag = await tag_service.get_tag(db, code=tag_data.code)
+                if existing_tag:
+                    raise ValueError(f"Tag with code {tag_data.code} already exists")
+                
+                tag = await tag_service.create_tag(db, tag_in=tag_data)
+                results.append(BatchResponseItem(
+                    success=True,
+                    data=tag,
+                    index=index
+                ))
+                success_count += 1
+                
+            elif operation.operation == BatchOperationType.UPDATE:
+                if not operation.id:
+                    raise ValueError("ID (code) is required for update operation")
+                if not operation.data:
+                    raise ValueError("Data is required for update operation")
+                
+                tag_code = operation.id
+                tag_data = operation.data
+                
+                # Check if tag exists
+                tag = await tag_service.get_tag(db, code=tag_code)
+                if not tag:
+                    raise ValueError(f"Tag with code {tag_code} not found")
+                
+                updated_tag = await tag_service.update_tag(db, code=tag_code, tag_in=tag_data)
+                results.append(BatchResponseItem(
+                    success=True,
+                    data=updated_tag,
+                    index=index
+                ))
+                success_count += 1
+                
+            elif operation.operation == BatchOperationType.DELETE:
+                if not operation.id:
+                    raise ValueError("ID (code) is required for delete operation")
+                
+                tag_code = operation.id
+                
+                # Check if tag exists
+                tag = await tag_service.get_tag(db, code=tag_code)
+                if not tag:
+                    raise ValueError(f"Tag with code {tag_code} not found")
+                
+                deleted_tag = await tag_service.delete_tag(db, code=tag_code)
+                results.append(BatchResponseItem(
+                    success=True,
+                    data=deleted_tag,
+                    index=index
+                ))
+                success_count += 1
+                
+            else:
+                raise ValueError(f"Unknown operation type: {operation.operation}")
+                
+        except Exception as e:
+            results.append(BatchResponseItem(
+                success=False,
+                error=str(e),
+                index=index
+            ))
+            error_count += 1
+    
+    return BatchResponse(
+        results=results,
+        success_count=success_count,
+        error_count=error_count
+    )
 
 
 @router.get("/{code}/users", response_model=List[User])

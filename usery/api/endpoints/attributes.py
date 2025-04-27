@@ -1,10 +1,11 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from usery.api.deps import get_current_user, get_db
+from usery.api.deps import get_current_user, get_db, get_current_superuser
 from usery.api.schemas.attribute import Attribute, AttributeCreate, AttributeUpdate, AttributeWithUserCount
 from usery.api.schemas.user import User
+from usery.api.schemas.batch import BatchRequest, BatchResponse, BatchResponseItem, BatchOperationType
 from usery.services import attribute as attribute_service
 from usery.services import user as user_service
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -163,3 +164,94 @@ async def delete_attribute(
         )
     
     return attribute
+
+
+@router.post("/batch", response_model=BatchResponse)
+async def batch_attributes_operations(
+    *,
+    db: AsyncSession = Depends(get_db),
+    batch_request: BatchRequest[AttributeCreate | AttributeUpdate],
+    current_user: User = Depends(get_current_superuser),
+) -> Any:
+    """
+    Perform batch operations on attributes (create, update, delete).
+    Only superusers can perform batch operations.
+    """
+    results = []
+    success_count = 0
+    error_count = 0
+
+    for index, operation in enumerate(batch_request.operations):
+        try:
+            if operation.operation == BatchOperationType.CREATE:
+                if not operation.data:
+                    raise ValueError("Data is required for create operation")
+                
+                attribute_data = operation.data
+                attribute = await attribute_service.create_attribute(db, attribute_in=attribute_data)
+                results.append(BatchResponseItem(
+                    success=True,
+                    data=attribute,
+                    index=index
+                ))
+                success_count += 1
+                
+            elif operation.operation == BatchOperationType.UPDATE:
+                if not operation.id:
+                    raise ValueError("ID is required for update operation")
+                if not operation.data:
+                    raise ValueError("Data is required for update operation")
+                
+                attribute_id = operation.id
+                attribute_data = operation.data
+                
+                # Check if attribute exists
+                attribute = await attribute_service.get_attribute(db, id=attribute_id)
+                if not attribute:
+                    raise ValueError(f"Attribute with ID {attribute_id} not found")
+                
+                updated_attribute = await attribute_service.update_attribute(
+                    db, id=attribute_id, attribute_in=attribute_data
+                )
+                results.append(BatchResponseItem(
+                    success=True,
+                    data=updated_attribute,
+                    index=index
+                ))
+                success_count += 1
+                
+            elif operation.operation == BatchOperationType.DELETE:
+                if not operation.id:
+                    raise ValueError("ID is required for delete operation")
+                
+                attribute_id = operation.id
+                
+                # Check if attribute exists
+                attribute = await attribute_service.get_attribute(db, id=attribute_id)
+                if not attribute:
+                    raise ValueError(f"Attribute with ID {attribute_id} not found")
+                
+                deleted_attribute = await attribute_service.delete_attribute(db, id=attribute_id)
+                results.append(BatchResponseItem(
+                    success=True,
+                    data=deleted_attribute,
+                    index=index
+                ))
+                success_count += 1
+                
+            else:
+                raise ValueError(f"Unknown operation type: {operation.operation}")
+                
+        except Exception as e:
+            results.append(BatchResponseItem(
+                success=False,
+                error=str(e),
+                index=index
+            ))
+            error_count += 1
+    
+    return BatchResponse(
+        results=results,
+        success_count=success_count,
+        error_count=error_count
+    )
