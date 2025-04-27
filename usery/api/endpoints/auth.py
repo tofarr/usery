@@ -39,8 +39,8 @@ async def login_access_token(
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
-        "access_token": await create_access_token(
-            user.id, db, expires_delta=access_token_expires
+        "access_token": create_access_token(
+            user.id, expires_delta=access_token_expires
         ),
         "token_type": "bearer",
     }
@@ -69,8 +69,8 @@ async def login_json(
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
-        "access_token": await create_access_token(
-            user.id, db, expires_delta=access_token_expires
+        "access_token": create_access_token(
+            user.id, expires_delta=access_token_expires
         ),
         "token_type": "bearer",
     }

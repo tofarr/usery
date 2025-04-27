@@ -4,22 +4,20 @@ from typing import Any, Dict, Optional, Union
 from jose import jwt
 from passlib.context import CryptContext
 from redis.asyncio import Redis
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from usery.config.settings import settings
-from usery.services import key_pair as key_pair_service
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-ALGORITHM = "RS256"  # Changed from HS256 to RS256
+# Use RS256 if private key is available in environment, otherwise fallback to HS256
+ALGORITHM = "RS256" if settings.JWT_PRIVATE_KEY else "HS256"
 
 
-async def create_access_token(
+def create_access_token(
     subject: Union[str, Any], 
-    db: AsyncSession,
     expires_delta: Optional[timedelta] = None
 ) -> str:
-    """Create a JWT access token using RS256 algorithm with stored key pair."""
+    """Create a JWT access token."""
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
@@ -27,16 +25,14 @@ async def create_access_token(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
     
-    # Get the active key pair
-    key_pair = await key_pair_service.get_active_key_pair(db)
-    if not key_pair:
-        # Fallback to HS256 if no key pair is available
-        to_encode = {"exp": expire, "sub": str(subject)}
-        return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    to_encode = {"exp": expire, "sub": str(subject)}
     
-    # Use RS256 with the private key
-    to_encode = {"exp": expire, "sub": str(subject), "kid": str(key_pair.id)}
-    encoded_jwt = jwt.encode(to_encode, key_pair.private_key, algorithm=ALGORITHM)
+    # Use RS256 with environment key if available, otherwise fallback to HS256
+    if settings.JWT_PRIVATE_KEY:
+        encoded_jwt = jwt.encode(to_encode, settings.JWT_PRIVATE_KEY, algorithm=ALGORITHM)
+    else:
+        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+        
     return encoded_jwt
 
 

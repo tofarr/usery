@@ -14,7 +14,6 @@ class TokenPayload(BaseModel):
     """Token payload schema."""
     
     sub: Optional[str] = None
-    kid: Optional[str] = None  # Key ID for RS256 tokens
 
 
 class Login(BaseModel):
