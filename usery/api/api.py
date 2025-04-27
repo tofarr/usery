@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from usery.api.endpoints import auth, users, tags, user_tags, attributes, user_attributes, clients, key_pairs
+from usery.api.endpoints import auth, users, tags, user_tags, attributes, user_attributes, clients, key_pairs, oidc
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -11,3 +11,7 @@ api_router.include_router(attributes.router, prefix="/attributes", tags=["attrib
 api_router.include_router(user_attributes.router, tags=["user_attributes"])
 api_router.include_router(clients.router, prefix="/clients", tags=["clients"])
 api_router.include_router(key_pairs.router, prefix="/key-pairs", tags=["key_pairs"])
+api_router.include_router(oidc.router, prefix="/oidc", tags=["oidc"])
+
+# Add the OpenID Connect Discovery endpoint at the root level
+api_router.include_router(oidc.router, tags=["oidc"])

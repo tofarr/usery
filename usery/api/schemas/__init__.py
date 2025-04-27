@@ -7,3 +7,6 @@ from usery.api.schemas.auth import Token, TokenPayload
 from usery.api.schemas.batch import BatchRequest, BatchResponse, BatchResponseItem, BatchOperationType
 from usery.api.schemas.client import Client, ClientCreate, ClientUpdate
 from usery.api.schemas.key_pair import KeyPair, KeyPairCreate, KeyPairUpdate
+from usery.api.schemas.authorization_code import AuthorizationCode, AuthorizationCodeCreate, AuthorizationCodeUpdate
+from usery.api.schemas.refresh_token import RefreshToken, RefreshTokenCreate, RefreshTokenUpdate
+from usery.api.schemas.consent import Consent, ConsentCreate, ConsentUpdate
