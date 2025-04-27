@@ -124,9 +124,13 @@ async def update_user_info(
     db: AsyncSession = Depends(get_db),
     user_id: UUID,
     user_in: UserUpdate,
+    current_user: UserModel = Depends(get_current_active_user),
 ) -> Any:
     """
     Update a user.
+    
+    Only superusers can update the is_superuser flag.
+    Superusers cannot remove their own superuser status.
     """
     user = await get_user(db, user_id=user_id)
     if not user:
@@ -134,6 +138,29 @@ async def update_user_info(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+    
+    # Check if the current user has permission to update this user
+    if current_user.id != user_id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to update this user",
+        )
+    
+    # Handle superuser flag changes
+    if user_in.is_superuser is not None:
+        # Only superusers can change the superuser flag
+        if not current_user.is_superuser:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only superusers can change the superuser status",
+            )
+        
+        # Superusers cannot remove their own superuser status
+        if current_user.id == user_id and user_in.is_superuser is False:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Superusers cannot remove their own superuser status",
+            )
     
     if user_in.email is not None and user_in.email != user.email:
         existing_user = await get_user_by_email(db, email=user_in.email)
@@ -240,6 +267,12 @@ async def batch_users_operations(
                     existing_user = await get_user_by_username(db, username=user_data.username)
                     if existing_user:
                         raise ValueError(f"Username {user_data.username} already registered")
+                
+                # Handle superuser flag changes
+                if user_data.is_superuser is not None:
+                    # Superusers cannot remove their own superuser status
+                    if current_user.id == user_id and user_data.is_superuser is False:
+                        raise ValueError("Superusers cannot remove their own superuser status")
                 
                 updated_user = await update_user(db, user_id=user_id, user_in=user_data)
                 results.append(BatchResponseItem(
