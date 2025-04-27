@@ -150,6 +150,7 @@ async def read_user_with_tags(
         email=result["user"].email,
         username=result["user"].username,
         full_name=result["user"].full_name,
+        avatar_url=result["user"].avatar_url,
         is_active=result["user"].is_active,
         created_at=result["user"].created_at,
         updated_at=result["user"].updated_at,

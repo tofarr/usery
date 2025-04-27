@@ -11,6 +11,7 @@ class UserBase(BaseModel):
     email: EmailStr
     username: str
     full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
     is_active: bool = True
     is_superuser: bool = False
 
@@ -27,6 +28,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     username: Optional[str] = None
     full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
     password: Optional[str] = Field(None, min_length=8)
     is_active: Optional[bool] = None
     is_superuser: Optional[bool] = None
