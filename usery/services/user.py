@@ -34,9 +34,21 @@ async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[U
     return result.scalars().all()
 
 
-async def count_users(db: AsyncSession) -> int:
-    """Count the total number of users in the system."""
-    result = await db.execute(select(func.count()).select_from(User))
+async def count_users(db: AsyncSession, query=None) -> int:
+    """Count the total number of users in the system.
+    
+    Args:
+        db: Database session
+        query: Optional custom query to use for counting
+    """
+    if query is None:
+        query = select(func.count()).select_from(User)
+    else:
+        # Convert the query to a count query
+        # This assumes the query is a select query with User as the primary entity
+        query = select(func.count()).select_from(query.subquery())
+    
+    result = await db.execute(query)
     return result.scalar_one()
 
 
