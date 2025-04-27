@@ -1,1 +1,1 @@
-from usery.api.endpoints import auth, users, tags, user_tags, attributes, user_attributes
+from usery.api.endpoints import auth, users, tags, user_tags, attributes, user_attributes, key_pairs
