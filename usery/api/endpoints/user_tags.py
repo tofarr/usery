@@ -2,7 +2,7 @@ from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from usery.api.deps import get_current_user, get_db
+from usery.api.deps import get_current_user, get_db, get_current_superuser
 from usery.api.schemas.user import User
 from usery.api.schemas.tag import Tag
 from usery.api.schemas.user_tag import UserTag, UserTagCreate
@@ -76,6 +76,13 @@ async def add_user_tag(
             detail="Tag not found",
         )
     
+    # Check if tag requires superuser and current user is not a superuser
+    if tag.requires_superuser and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This tag requires superuser privileges to assign",
+        )
+    
     # Check if user already has this tag
     user_tag = await user_tag_service.get_user_tag(db, user_id=user_id, tag_code=tag_code)
     if user_tag:
@@ -112,6 +119,14 @@ async def remove_user_tag(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions to modify this user's tags",
+        )
+    
+    # Check if tag exists and requires superuser
+    tag = await tag_service.get_tag(db, code=tag_code)
+    if tag and tag.requires_superuser and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This tag requires superuser privileges to remove",
         )
     
     # Delete user tag

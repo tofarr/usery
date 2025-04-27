@@ -2,7 +2,7 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from usery.api.deps import get_current_user, get_db
+from usery.api.deps import get_current_user, get_db, get_current_superuser
 from usery.api.schemas.user_attribute import UserAttribute, UserAttributeCreate, UserAttributeUpdate
 from usery.api.schemas.user import User
 from usery.services import user_attribute as user_attribute_service
@@ -64,6 +64,13 @@ async def create_user_attribute(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Attribute not found",
+        )
+    
+    # Check if attribute requires superuser and current user is not a superuser
+    if attribute.requires_superuser and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This attribute requires superuser privileges to assign",
         )
     
     # Check if user attribute already exists
@@ -129,6 +136,14 @@ async def update_user_attribute(
             detail="Not enough permissions to update this user attribute",
         )
     
+    # Check if attribute requires superuser
+    attribute = await attribute_service.get_attribute(db, id=user_attribute.attribute_id)
+    if attribute and attribute.requires_superuser and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This attribute requires superuser privileges to modify",
+        )
+    
     user_attribute = await user_attribute_service.update_user_attribute(
         db, id=id, user_attribute_in=user_attribute_in
     )
@@ -156,6 +171,14 @@ async def delete_user_attribute(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions to delete this user attribute",
+        )
+    
+    # Check if attribute requires superuser
+    attribute = await attribute_service.get_attribute(db, id=user_attribute.attribute_id)
+    if attribute and attribute.requires_superuser and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This attribute requires superuser privileges to remove",
         )
     
     user_attribute = await user_attribute_service.delete_user_attribute(db, id=id)
