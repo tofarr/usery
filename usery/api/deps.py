@@ -14,7 +14,7 @@ from usery.config.settings import settings
 from usery.db.redis import get_redis
 from usery.db.session import get_db
 from usery.models.user import User
-from usery.services.security import ALGORITHM, is_token_blacklisted
+from usery.services.security import ALGORITHM, is_token_blacklisted, _JWT_SECRET_KEY
 from usery.services.user import get_user
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
@@ -36,23 +36,10 @@ async def get_current_user(
         )
     
     try:
-        # Try to decode the token using RS256 if public key is available, otherwise use HS256
-        if settings.JWT_PUBLIC_KEY:
-            try:
-                # First try with RS256 and the public key from environment
-                payload = jwt.decode(
-                    token, settings.JWT_PUBLIC_KEY, algorithms=["RS256"]
-                )
-            except JWTError:
-                # If RS256 fails, fall back to HS256
-                payload = jwt.decode(
-                    token, settings.SECRET_KEY, algorithms=["HS256"]
-                )
-        else:
-            # No public key in environment, use HS256
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=["HS256"]
-            )
+        # Decode the token using HS256 and the JWT secret key
+        payload = jwt.decode(
+            token, _JWT_SECRET_KEY, algorithms=[ALGORITHM]
+        )
             
         token_data = TokenPayload(**payload)
     except (JWTError, ValidationError):

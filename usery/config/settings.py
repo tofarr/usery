@@ -1,4 +1,5 @@
 import os
+import secrets
 from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -30,15 +31,11 @@ class Settings(BaseSettings):
     # Security settings
     SECRET_KEY: str = Field(
         default="supersecretkey",
-        description="Secret key for JWT token generation (used for HS256)"
+        description="Secret key for general application use"
     )
-    JWT_PRIVATE_KEY: Optional[str] = Field(
+    JWT_SECRET_KEY: Optional[str] = Field(
         default=None,
-        description="RSA private key for JWT token signing (used for RS256)"
-    )
-    JWT_PUBLIC_KEY: Optional[str] = Field(
-        default=None,
-        description="RSA public key for JWT token verification (used for RS256)"
+        description="Secret key for JWT token generation (HS256). If not provided, a random key will be generated."
     )
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     SUPERUSER_ONLY_CREATE_USERS: bool = Field(

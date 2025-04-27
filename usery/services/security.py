@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import secrets
 from typing import Any, Dict, Optional, Union
 
 from jose import jwt
@@ -9,8 +10,13 @@ from usery.config.settings import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Use RS256 if private key is available in environment, otherwise fallback to HS256
-ALGORITHM = "RS256" if settings.JWT_PRIVATE_KEY else "HS256"
+# Always use HS256 for JWT tokens
+ALGORITHM = "HS256"
+
+# Generate a random JWT secret key if not provided in environment
+_JWT_SECRET_KEY = settings.JWT_SECRET_KEY
+if not _JWT_SECRET_KEY:
+    _JWT_SECRET_KEY = secrets.token_hex(32)  # Generate a secure random key
 
 
 def create_access_token(
@@ -27,11 +33,8 @@ def create_access_token(
     
     to_encode = {"exp": expire, "sub": str(subject)}
     
-    # Use RS256 with environment key if available, otherwise fallback to HS256
-    if settings.JWT_PRIVATE_KEY:
-        encoded_jwt = jwt.encode(to_encode, settings.JWT_PRIVATE_KEY, algorithm=ALGORITHM)
-    else:
-        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    # Use the JWT secret key with HS256 algorithm
+    encoded_jwt = jwt.encode(to_encode, _JWT_SECRET_KEY, algorithm=ALGORITHM)
         
     return encoded_jwt
 
