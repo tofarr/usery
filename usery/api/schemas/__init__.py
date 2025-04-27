@@ -6,3 +6,4 @@ from usery.api.schemas.user_attribute import UserAttribute, UserAttributeCreate,
 from usery.api.schemas.auth import Token, TokenPayload
 from usery.api.schemas.batch import BatchRequest, BatchResponse, BatchResponseItem, BatchOperationType
 from usery.api.schemas.client import Client, ClientCreate, ClientUpdate
+from usery.api.schemas.key_pair import KeyPair, KeyPairCreate, KeyPairUpdate
