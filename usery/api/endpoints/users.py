@@ -19,6 +19,7 @@ from usery.services.user import (
     get_users,
     update_user,
     get_user_with_tags,
+    count_users,
 )
 
 router = APIRouter()
@@ -50,6 +51,9 @@ async def create_new_user(
     
     If SUPERUSER_ONLY_CREATE_USERS setting is True, only superusers can create new users.
     Otherwise, anyone can register.
+    
+    Special case: If there are no users in the system, the first user created will
+    automatically be a superuser, regardless of the SUPERUSER_ONLY_CREATE_USERS setting.
     """
     # If SUPERUSER_ONLY_CREATE_USERS is True, the dependency will ensure only superusers can access this endpoint
     
@@ -66,6 +70,12 @@ async def create_new_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The user with this username already exists in the system.",
         )
+    
+    # Check if this is the first user being created
+    user_count = await count_users(db)
+    if user_count == 0:
+        # First user must be a superuser
+        user_in.is_superuser = True
     
     user = await create_user(db, user_in=user_in)
     return user
@@ -233,6 +243,12 @@ async def batch_users_operations(
                 existing_user = await get_user_by_username(db, username=user_data.username)
                 if existing_user:
                     raise ValueError(f"User with username {user_data.username} already exists")
+                
+                # Check if this is the first user being created
+                user_count = await count_users(db)
+                if user_count == 0:
+                    # First user must be a superuser
+                    user_data.is_superuser = True
                 
                 user = await create_user(db, user_in=user_data)
                 results.append(BatchResponseItem(

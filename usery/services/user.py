@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 from uuid import UUID
@@ -32,6 +32,12 @@ async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[U
     """Get a list of users."""
     result = await db.execute(select(User).offset(skip).limit(limit))
     return result.scalars().all()
+
+
+async def count_users(db: AsyncSession) -> int:
+    """Count the total number of users in the system."""
+    result = await db.execute(select(func.count()).select_from(User))
+    return result.scalar_one()
 
 
 async def get_user_with_tags(db: AsyncSession, user_id: UUID) -> Optional[Dict]:
